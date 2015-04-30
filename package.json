@@ -1,0 +1,16 @@
+{
+  "name": "http-bouncer",
+  "version": "1.0.0",
+  "description": "A small IP and JSON API request oriented HTTP security system for express apps.",
+  "license": "MIT",
+  "main": "bouncer.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raelgor/http-bouncer.git"
+  },
+  "author": {
+    "name": "Kosmas Papadatos",
+    "email": "kosmas.papadatos@gmail.com",
+    "url": "https://plus.google.com/+KosmasPapadatos"
+  }
+}
