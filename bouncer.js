@@ -7,7 +7,7 @@ var bouncer = function (request, res, next) {
         apiCall = request.body;
 
     // Check if request ip is blacklisted
-    if (bouncer.blacklist[ip]) return false;
+    if (bouncer.blacklist[ip]) return res.end();
 
     // Register request
     if (!bouncer.restrictions[ip]) bouncer.restrictions[ip] = 0;
@@ -57,7 +57,7 @@ var bouncer = function (request, res, next) {
                 restrictionAddress += ':' + key + ':' + apiCall[key];
             });
 
-            if (bouncer.blacklist[restrictionAddress]) return false;
+            if (bouncer.blacklist[restrictionAddress]) return res.end();
 
             if (!bouncer.restrictions[restrictionAddress]) bouncer.restrictions[restrictionAddress] = 0;
             if (++bouncer.restrictions[restrictionAddress] >= call.LIMIT) bouncer.blacklist[restrictionAddress] = 1;
