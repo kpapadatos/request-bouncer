@@ -1,6 +1,6 @@
 # http-bouncer 
 
-[![Build Status](https://travis-ci.org/raelgor/http-bouncer.svg?branch=master)](https://travis-ci.org/raelgor/http-bouncer)
+[![Build Status](http://img.shields.io/travis/raelgor/http-bouncer.svg?style=flat-square)](https://travis-ci.org/raelgor/http-bouncer) [![NPM version](http://img.shields.io/npm/v/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer) [![NPM license](http://img.shields.io/npm/l/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer)
 
 A small IP and JSON API request based HTTP security system for express apps.
 
