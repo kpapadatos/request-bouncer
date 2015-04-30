@@ -51,3 +51,10 @@ app.use('*',bouncer);
 
 // Next route...
 ```
+
+The JSON_API_CALLS match declared above translates to the following limitation:
+Only 10 requests every 10 seconds will be answered by each IP address. Said requests are in JSON format and contain
+```json
+{ "api": "core", "request": "login", "username":"example" }
+```
+So the user `example` can only try to login 10 times every 10 seconds from the same IP address.
