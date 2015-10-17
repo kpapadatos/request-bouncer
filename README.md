@@ -1,6 +1,6 @@
 # http-bouncer 
 
-[![Build Status](http://img.shields.io/travis/raelgor/http-bouncer.svg?style=flat-square)](https://travis-ci.org/raelgor/http-bouncer) [![NPM version](http://img.shields.io/npm/v/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer) [![NPM license](http://img.shields.io/npm/l/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer)
+[![NPM version](http://img.shields.io/npm/v/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer) [![NPM license](http://img.shields.io/npm/l/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer)
 
 A small IP and JSON API request based HTTP security system for express apps.
 
@@ -13,51 +13,42 @@ npm install http-bouncer
 ### Example
 
 ```js
-var express = require('express'),
-    app = express(),
-    bouncer = require('http-bouncer'),
-    bodyParser = require('body-parser');
+var bounce = require('http-bouncer');
 
-// You need this to use the bouncer for JSON API calls
-app.use(bodyParser.json({}));
-
-// Configure the bouncer
-bouncer.config = {
-
-    // These values mean that 40 requests will be answered
-    // per IP address every 10 secs
-    GLOBAL_IP_CHECK_INTERVAL: 10000,
-    GLOBAL_IP_PER_INTERVAL: 40,
-    
-    JSON_API_CALLS: [
-        {
-            MATCH: {
-                    api: "core",
-                    request: "login"
-            },
-            INTERVAL: 10000,
-            LIMIT: 10,
-            INCLUDE_IP: true,
-            INCLUDE_FROM_MATCH: ["username"]
-        }
-        
-        // More matches...
-    
-    ]
-
-};
-
-app.use('*',bouncer);
-
-// Next route...
+// Adds a new bouncing rule
+bounce({
+    // The rule applies if the #match
+    // pattern matches
+    $match: {
+        request: 'login'
+    },
+    // These values of the request
+    // will be added to its identifier
+    $include: {
+        username: 1,
+        ip: 1
+    }
+})
+// Blacklist these requests when we've had 100
+// of them in 10 seconds for 10 seconds
+.on(100).over(10000).for(10000);
 ```
 
-The JSON_API_CALLS match declared above translates to the following limitation:
-Only 10 requests every 10 seconds will be answered by each IP address. Said requests are in JSON format and contain
-```json
-{ "api": "core", "request": "login", "username":"example" }
+In the example above, only 100 login requests will be allowed every 10 seconds before a 10 second ban occurs.
+Now that we have added the rule, let's validate a request:
+```js
+// This returns true or false depending
+// on the matching rules
+bounce.check({
+    request: 'login',
+    username: 'someone',
+    password: 'something',
+    ip: '127.0.0.1'
+});
 ```
-So the user `example` can only try to login 10 times every 10 seconds from the same IP address.
+
+## TODO
+- Replace `setTimeout` logic with something friendlier to the system in case of DDoS.
 
 ## License
 

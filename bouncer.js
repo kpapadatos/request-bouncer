@@ -1,98 +1,156 @@
-﻿// Bouncer
-// Main HTTP IP-based security system
+﻿// Used to add patterns
+var bounce = function (requestPattern) {
+    
+    requestPattern = new bounce.RequestPattern(requestPattern);
 
-var bouncer = function (request, res, next) {
+    bounce.requestPatterns.push(requestPattern);
 
-    var ip = request.connection.remoteAddress,
-        apiCall = request.body;
+    return requestPattern;
+    
+}
 
-    // Check if request ip is blacklisted
-    if (bouncer.blacklist[ip]) return res.end();
+// Wrap the pattern with this model to avoid conflicting with
+// the on, over and for keys
+bounce.RequestPattern = function (pattern) {
 
-    // Register request
-    if (!bouncer.restrictions[ip]) bouncer.restrictions[ip] = 0;
-    if (++bouncer.restrictions[ip] >= bouncer.config.GLOBAL_IP_PER_INTERVAL) {
+    // Default values
+    this._on = 100;
+    this._over = 10000;
+    this._for = 10000;
 
-        bouncer.blacklist[ip] = 1;
+    this.on = function (val) { this._on = val; return this; }
+    this.over = function (val) { this._over = val; return this; }
+    this.for = function (val) { this._for = val; return this; }
 
-    } else {
+    this.pattern = pattern;
 
-        if(bouncer.blacklist[ip]) delete bouncer.blacklist[ip];
+}
+
+// Request indexes and pattern storage
+bounce.requestPatterns = [];
+bounce.requestIndex = {};
+bounce.blacklistIndex = {};
+bounce._onUnknown = true;
+
+bounce.resetMonitorStatus = function () {
+    this.requestIndex = {};
+    this.blacklistIndex = {};
+}
+
+bounce.reset = function () {
+    this.resetMonitorStatus();
+    this.requestPatterns = [];
+    this._onUnknown = true;
+}
+
+bounce.onUnknown = function (val) { bounce._onUnknown = val; }
+
+// Factory callback set to default setTimeout. Override for testability.
+// @todo Keep this in mind: http://stackoverflow.com/questions/12168708/is-there-any-limit-to-settimeout
+bounce.setTimeout = setTimeout;
+
+// Used to check requests
+bounce.check = function (requestObject) {
+
+    var requestID = this.getIdFromRequestObject(requestObject);
+    var requestPattern = this.getPatternFromRequestObject(requestObject);
+
+    // If unrecognized request, take the default action
+    if (!requestID) return this._onUnknown;
+
+    var blacklistIndex = this.blacklistIndex;
+
+    // If requestID is banned, cut it
+    if (requestID in blacklistIndex) return false;
+    
+    var requestIndex = this.requestIndex;
+    
+    // Make or load this request's record
+    var record = requestIndex[requestID] || (requestIndex[requestID] = 0 );
+
+    // If status is >= 1, add to blacklist
+    if (record >= requestPattern._on) {
+
+        blacklistIndex[requestID] = 1;
+
+        // Clear from blacklist after pattern's for
+        this.setTimeout(function () {
+            delete blacklistIndex[requestID];
+        }, requestPattern._for);
+
+        return false;
 
     }
 
-    // Set timeout to clear restrictions
-    setTimeout(function () {
-        bouncer.restrictions[ip]--;
-        if (bouncer.restrictions[ip] < bouncer.config.GLOBAL_IP_PER_INTERVAL && bouncer.blacklist[ip]) delete bouncer.blacklist[ip];
-        if (!bouncer.restrictions[ip]) delete bouncer.restrictions[ip];
-    }, bouncer.config.GLOBAL_IP_CHECK_INTERVAL);
+    // Update pool
+    ++requestIndex[requestID];
 
-    // Bounce JSON
-    if (typeof apiCall != "object") try { apiCall = JSON.parse(apiCall); } catch (x) { }
-    if (typeof apiCall == "object") {
+    // Clear this request from pool after time specified by pattern
+    this.setTimeout(function () {
+        if(--requestIndex[requestID] == 0) delete requestIndex[requestID];
+    }, requestPattern._over);
 
-        for (var i in bouncer.config.JSON_API_CALLS) {
+    // If we got here, pass
+    return true;
 
-            var call = bouncer.config.JSON_API_CALLS[i],
-                restrictionAddress = call.INCLUDE_IP ? ip + ':' : '',
-                match = call.MATCH,
-                matchFlag = true;
+}
 
-            for (var p in match) {
+// Used to find the pattern of a request
+bounce.getPatternFromRequestObject = function (requestObject) {
 
-                if (apiCall[p] != match[p]) matchFlag = false;
-                else {
+    var result = false;
+    
+    this.requestPatterns.forEach(function (RequestPatternObject) {
 
-                    restrictionAddress += ':' + p + ':' + match[p];
+        var pattern = RequestPatternObject.pattern;
+        var success = true;
 
-                }
+        // I think that an or-logic was required here - but
+        // "and" logic is implemented instead
+        for (var key in pattern.$match) {
+
+            if (pattern.$match[key] != requestObject[key]) {
+
+                success = false;
 
             }
-
-            if (!matchFlag) continue;
-
-            call.INCLUDE_FROM_MATCH = call.INCLUDE_FROM_MATCH || [];
-            call.INCLUDE_FROM_MATCH.forEach(function (key) {
-                restrictionAddress += ':' + key + ':' + apiCall[key];
-            });
-
-            if (bouncer.blacklist[restrictionAddress]) return res.end();
-
-            if (!bouncer.restrictions[restrictionAddress]) bouncer.restrictions[restrictionAddress] = 0;
-            if (++bouncer.restrictions[restrictionAddress] >= call.LIMIT) bouncer.blacklist[restrictionAddress] = 1;
-            else {
-                if (bouncer.blacklist[restrictionAddress]) delete bouncer.blacklist[restrictionAddress];
-            }
-
-            setTimeout(function () {
-                bouncer.restrictions[restrictionAddress]--;
-                if (bouncer.restrictions[restrictionAddress] < call.LIMIT && bouncer.blacklist[restrictionAddress]) delete bouncer.blacklist[restrictionAddress];
-                if (!bouncer.restrictions[restrictionAddress]) delete bouncer.restrictions[restrictionAddress];
-            }, call.INTERVAL);
 
         }
+        
+        if (!result && success) {
+            result = RequestPatternObject;
+        }
+    });
+
+    return result;
+
+}
+
+// Used to make an ID out of a request and its pattern
+bounce.getIdFromRequestObject = function(requestObject) {
+
+    var patternWrapper = this.getPatternFromRequestObject(requestObject);
+
+    if (!patternWrapper) return false;
+    
+    var requestID = [];
+
+    var pattern = patternWrapper.pattern;
+
+    for (var key in pattern.$match) {
+
+        requestID.push(key, pattern.$match[key]);
 
     }
 
-    // Allow request to pass
-    return next ? next() : true;
+    for (var key in pattern.$include) {
+
+        requestID.push(key, requestObject[key]);
+
+    }
+
+    return requestID.join('::');
 
 }
 
-// Configuration
-bouncer.config = {
-
-    GLOBAL_IP_CHECK_INTERVAL: 10000,
-    GLOBAL_IP_PER_INTERVAL: 40,
-
-    JSON_API_CALLS: [
-        
-    ]
-
-}
-
-bouncer.blacklist = {};
-bouncer.restrictions = {};
-
-module.exports = bouncer;
+module.exports = bounce;

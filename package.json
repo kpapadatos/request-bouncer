@@ -1,7 +1,7 @@
 {
     "name": "http-bouncer",
-    "version": "1.0.2",
-    "description": "A small IP and JSON API request based HTTP security system for express apps.",
+    "version": "1.1.0",
+    "description": "A general request bouncer based on simple rules.",
     "keywords": [
         "security",
         "ddos",
