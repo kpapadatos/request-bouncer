@@ -1,33 +1,29 @@
-# http-bouncer 
+# request-bouncer
 
-[![NPM version](http://img.shields.io/npm/v/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer) [![NPM license](http://img.shields.io/npm/l/http-bouncer.svg?style=flat-square)](https://www.npmjs.org/package/http-bouncer)
-
-A small IP and JSON API request based HTTP security system for express apps.
+An abstract request blacklisting class.
 
 ### Install
-
+Depending on your Node version, you may need `--harmony` or `--es_staging` to run this package.
 ```
-npm install http-bouncer
+npm i --save request-bouncer
 ```
 
 ### Example
 
 ```js
-var bounce = require('http-bouncer');
+var Bouncer = require('request-bouncer');
+var bouncer = new Bouncer();
 
 // Adds a new bouncing rule
-bounce({
+bouncer.bounce({
     // The rule applies if the #match
     // pattern matches
     $match: {
         request: 'login'
     },
-    // These values of the request
+    // These key/value pairs of the request object
     // will be added to its identifier
-    $include: {
-        username: 1,
-        ip: 1
-    }
+    $include: ['username', 'ip']
 })
 // Blacklist these requests when we've had 100
 // of them in 10 seconds for 10 seconds
@@ -39,16 +35,13 @@ Now that we have added the rule, let's validate a request:
 ```js
 // This returns true or false depending
 // on the matching rules
-bounce.check({
+bouncer.check({
     request: 'login',
     username: 'someone',
     password: 'something',
     ip: '127.0.0.1'
 });
 ```
-
-## TODO
-- Replace `setTimeout` logic with something friendlier to the system in case of DDoS.
 
 ## License
 
