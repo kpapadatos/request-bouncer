@@ -1,21 +1,27 @@
 {
-    "name": "http-bouncer",
-    "version": "1.1.0",
-    "description": "A general request bouncer based on simple rules.",
-    "keywords": [
-        "security",
-        "ddos",
-        "express"
-    ],
-    "license": "MIT",
-    "main": "bouncer.js",
-    "repository": {
+  "name": "request-bouncer",
+  "version": "2.0.0",
+  "description": "An abstract request blacklisting class.",
+  "keywords": [
+    "security",
+    "iptable",
+    "ddos"
+  ],
+  "license": "MIT",
+  "main": "bouncer.js",
+  "scripts": {
+      "test": "mocha --es_staging"
+  },
+  "repository": {
     "type": "git",
-        "url": "https://github.com/raelgor/http-bouncer.git"
-    },
-    "author": {
-        "name": "Kosmas Papadatos",
-        "email": "kosmas.papadatos@gmail.com",
-        "url": "https://plus.google.com/+KosmasPapadatos"
-    }
+    "url": "https://github.com/raelgor/request-bouncer.git"
+  },
+  "author": {
+    "name": "Kosmas Papadatos",
+    "email": "kosmas.papadatos@gmail.com",
+    "url": "https://plus.google.com/+KosmasPapadatos"
+  },
+  "devDependencies": {
+    "mocha": "^2.3.4"
+  }
 }
